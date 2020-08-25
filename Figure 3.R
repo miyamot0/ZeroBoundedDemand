@@ -1,3 +1,6 @@
+# Shawn Gilroy (2019) - MIT
+# Louisiana State University
+
 library(beezdemand)
 library(broom)
 library(ggplot2)
@@ -11,7 +14,13 @@ library(tidyverse)
 
 set.seed(65535)
 
-nSimulatedSeries <- 500
+png(filename = "plots/Figure 3.png",
+    width=8,
+    height=3.5,
+    units="in",
+    res=600)
+
+nSimulatedSeries <- 2000
 
 capTo1000 <- TRUE
 
@@ -135,7 +144,7 @@ for (i in passingIds) {
     coreFrame[i, "Alpha.IHS"]  <- coef(zbeFit2)["alpha"]
     coreFrame[i, "Q0.IHS"]     <- coef(zbeFit2)["q0"]
 
-    coreFrame[i, "Pmax.IHS"]  <- GetPmaxIHSderivative(
+    coreFrame[i, "Pmax.IHS"]  <- GetPmaxIHSobserved(
       coef(zbeFit2)["alpha"] %>% unname(),
       coef(zbeFit2)["q0"] %>% unname()
     )
@@ -155,8 +164,6 @@ if (capTo1000 == TRUE) {
 ###
 # Just pull from here if just re-drawing
 ###
-
-#coreFrame <- readRDS("koffsim.rda")
 
 ################
 ### Figure 3 ###
@@ -189,6 +196,8 @@ coreFrame %>%
     panel.grid.minor = element_blank()
   )
 
+dev.off()
+
 ####################
 ### Correlations ###
 ####################
@@ -212,3 +221,4 @@ cor.test(coreFrame$Q0.EXPL,  coreFrame$Q0E, method = "spearman", exact = FALSE) 
 
 cor.test(coreFrame$Q0.EXPD,  coreFrame$Q0E, method = "spearman", exact = FALSE) %>%
   tidy()
+

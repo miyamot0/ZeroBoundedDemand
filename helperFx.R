@@ -214,3 +214,24 @@ GetPmaxIHSderivative <- function(A_, Q0_) {
 
   return(result$p1)
 }
+
+GetPmaxIHSobserved <- function(A_, Q0_) {
+  result <- NULL
+  try(result <- optimx::optimx(par = c(1),
+                               fn = function(par, data) {
+                                 demand <- log((data$Q0 * 0.5) + ((0.5^2) * (data$Q0^2) + 1)^0.5)/log(10) + log((data$Q0 * 0.5) + ((0.5^2) * (data$Q0^2) + 1)^0.5)/log(10) * (exp(-data$A * data$Q0 * par[1]) - 1)
+                                 demand.n <- fromIhsToNormal(demand)
+                                 
+                                 -(demand.n * par[1])
+                               },
+                               data = data.frame(Q0 = Q0_,
+                                                 A = A_),
+                               method = c("BFGS"),
+                               control=list(maxit=2500)), silent = TRUE)
+  
+  if (is.null(result)) {
+    return(NA)
+  }
+  
+  return(result$p1)
+}
