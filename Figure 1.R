@@ -1,7 +1,10 @@
 # Shawn Gilroy (2019) - MIT
 # Louisiana State University
 
+library(extrafont)
+library(jtools)
 library(ggplot2)
+library(tidyverse)
 
 transMod <- function(x, theta = 0.5) { 
   log((x * theta) + ((theta^2) * (x^2) + 1)^0.5)/log(10)
@@ -44,6 +47,14 @@ plottingFrame <- data.frame(
   IHS   = c(0, transMod(seq(0.01, 1000, length.out = 100000)))
 )
 
+par(family="Times")
+
+png(filename = "plots/Figure 1.png",
+    width=8,
+    height=6,
+    units="in",
+    res=600)
+
 plottingFrame$mask <- 1
 
 plottingFrame[plottingFrame$X == 0,]$mask <- 0
@@ -70,13 +81,12 @@ plt <- ggplot(plottingFrame.melt, aes(x=X, y=Y, color = Scale)) +
     "IHS"   = "black",
     "Log10" = "gray"
   )) +
-  ggtitle("Comparison of Transformations") +
   theme_apa() +
   theme(strip.background = element_blank(),
                  strip.text = element_blank(),
                  plot.title = element_text(hjust = 0.5),
                  legend.position = "bottom",
-                 text = element_text(size=16)) +
+                 text = element_text(size=16, family="Times")) +
   annotation_logticks2(sides="b", data = data.frame(X= NA, mask = 1)) +
   ylim(c(-2, 2)) +
   labs(x = "Untransformed Value", 
@@ -92,7 +102,9 @@ plt <- plt +
 library(grid)
 gt = ggplot_gtable(ggplot_build(plt))
 gt$widths[5] = 5*gt$widths[5]
-grid.draw(gt)
 
-#plt
+plotter <- grid.draw(gt)
 
+print(plotter)
+
+dev.off()
