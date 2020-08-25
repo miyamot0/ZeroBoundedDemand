@@ -6,6 +6,8 @@ library(jtools)
 library(ggplot2)
 library(tidyverse)
 
+cexScale <- 1.5
+
 par(family="Times")
 
 png(filename = "plots/Figure 2.png",
@@ -55,60 +57,84 @@ hurshKeep <- nls(transMod(y) ~ transMod(q0) + kKeep * (exp(-alpha * q0 * x) - 1)
                  ),
                  data = dataFrameKeep)
 
-par(mfrow = c(1, 3))
+par(mfrow = c(1, 3),
+    family="Times")
 
 plot(dataFrameKeep$x, transMod(dataFrameKeep$y),
-     main = "Zero Consumption Included",
+     main = "Zero Included",
      ylim = c(0, 4),
      xlim = xAxisLimits,
-     ylab = "Consumption (Log10-like Transformed)",
+     ylab = "Transformed Consumption",
      xlab = "",
      xaxt = 'n',
-     log = "x")
-axis(1, at=c(0.1, 1, 10, 100), labels=c(0.1, 1, 10, 100))
+     log = "x",
+     cex.main = cexScale,
+     cex.axis = cexScale,
+     cex.lab = cexScale,
+     cex = cexScale)
+axis(1, 
+     at=c(0.1, 1, 10, 100), 
+     labels=c(0.1, 1, 10, 100),
+     cex.axis = cexScale)
 lines(dataFrameKeep$x, predict(hurshKeep))
 
 text(.1, 0, 
      paste0("Q0: ", round(coef(hurshKeep)["q0"], 2), "\n",
             "Alpha: ", round(coef(hurshKeep)["alpha"], 6)
      ),
-     adj = c(0, 0)
+     adj = c(0, 0),
+     cex = cexScale
 )
 
 plot(dataFrameMod$x, transMod(dataFrameMod$y),
-     main = "Zero Consumption Replaced with 0.1",
+     main = "Zero Replaced with 0.1",
      ylim = c(0, 4),
      xlim = xAxisLimits,
      ylab = "",
      xlab = "Price",
      xaxt = 'n',
-     log = "x")
-axis(1, at=c(0.1, 1, 10, 100), labels=c(0.1, 1, 10, 100))
+     log = "x",
+     cex.main = cexScale,
+     cex.axis = cexScale,
+     cex.lab = cexScale,
+     cex = cexScale)
+axis(1, 
+     at=c(0.1, 1, 10, 100), 
+     labels=c(0.1, 1, 10, 100),
+     cex.axis = cexScale)
 lines(dataFrameMod$x, predict(hurshMod))
 
 text(.1, 0, 
      paste0("Q0: ", round(coef(hurshMod)["q0"], 2), "\n",
             "Alpha: ", round(coef(hurshMod)["alpha"], 6)
      ),
-     adj = c(0, 0)
+     adj = c(0, 0),
+     cex = cexScale
 )
 
 plot(dataFrameMod2$x, transMod(dataFrameMod2$y),
-     main = "Zero Consumption Replaced with 0.01",
+     main = "Zero Replaced with 0.01",
      ylim = c(0, 4),
      xlim = xAxisLimits,
      ylab = "",
      xlab = "",
      xaxt = 'n',
-     log = "x")
-axis(1, at=c(0.1, 1, 10, 100), labels=c(0.1, 1, 10, 100))
+     log = "x",
+     cex.main = cexScale,
+     cex.axis = cexScale,
+     cex = cexScale)
+axis(1, 
+     at=c(0.1, 1, 10, 100), 
+     labels=c(0.1, 1, 10, 100),
+     cex.axis = cexScale)
 lines(dataFrameMod2$x, predict(hurshMod2))
 
 text(.1, 0, 
      paste0("Q0: ", round(coef(hurshMod2)["q0"], 2), "\n",
             "Alpha: ", round(coef(hurshMod2)["alpha"], 6)
      ),
-     adj = c(0, 0)
+     adj = c(0, 0),
+     cex = cexScale
 )
 
 dev.off()
