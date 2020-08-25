@@ -1,6 +1,19 @@
 # Shawn Gilroy (2019) - MIT
 # Louisiana State University
 
+library(extrafont)
+library(jtools)
+library(ggplot2)
+library(tidyverse)
+
+par(family="Times")
+
+png(filename = "plots/Figure 2.png",
+    width=8,
+    height=3.5,
+    units="in",
+    res=600)
+
 dataFrameMod <- data.frame(
   x = c(0.5,1.0,1.5,2.0,2.5,3.0,4.0,5.0,10.0,15.0, 20, 50, 100), 
   y = c(1000,1000,800,800,700,600,500,400,200,100, 50, 10, 0.1)
@@ -16,6 +29,8 @@ dataFrameKeep <- data.frame(
   y = c(1000,1000,800,800,700,600,500,400,200,100, 50, 10, 0.0)
 )
 
+xAxisLimits <- c(.1, 100)
+
 kMod <-  transMod(max(dataFrameMod$y)) -  transMod(min(dataFrameMod$y))  + 0.5
 hurshMod <- nls(transMod(y) ~ transMod(q0) + kMod * (exp(-alpha * q0 * x) - 1),
                 start = list(
@@ -23,8 +38,6 @@ hurshMod <- nls(transMod(y) ~ transMod(q0) + kMod * (exp(-alpha * q0 * x) - 1),
                   alpha = 0.00006
                 ),
                 data = dataFrameMod)
-
-#summary(hurshMod)
 
 kMod2 <-  transMod(max(dataFrameMod2$y)) -  transMod(min(dataFrameMod2$y))  + 0.5
 hurshMod2 <- nls(transMod(y) ~ transMod(q0) + kMod2 * (exp(-alpha * q0 * x) - 1),
@@ -34,8 +47,6 @@ hurshMod2 <- nls(transMod(y) ~ transMod(q0) + kMod2 * (exp(-alpha * q0 * x) - 1)
                  ),
                  data = dataFrameMod2)
 
-#summary(hurshMod2)
-
 kKeep <-  transMod(max(dataFrameKeep$y)) -  transMod(min(dataFrameKeep$y))  + 0.5
 hurshKeep <- nls(transMod(y) ~ transMod(q0) + kKeep * (exp(-alpha * q0 * x) - 1),
                  start = list(
@@ -43,8 +54,6 @@ hurshKeep <- nls(transMod(y) ~ transMod(q0) + kKeep * (exp(-alpha * q0 * x) - 1)
                    alpha = 0.00006
                  ),
                  data = dataFrameKeep)
-
-#summary(hurshKeep)
 
 par(mfrow = c(1, 3))
 
@@ -54,7 +63,9 @@ plot(dataFrameKeep$x, transMod(dataFrameKeep$y),
      xlim = xAxisLimits,
      ylab = "Consumption (Log10-like Transformed)",
      xlab = "",
+     xaxt = 'n',
      log = "x")
+axis(1, at=c(0.1, 1, 10, 100), labels=c(0.1, 1, 10, 100))
 lines(dataFrameKeep$x, predict(hurshKeep))
 
 text(.1, 0, 
@@ -70,7 +81,9 @@ plot(dataFrameMod$x, transMod(dataFrameMod$y),
      xlim = xAxisLimits,
      ylab = "",
      xlab = "Price",
+     xaxt = 'n',
      log = "x")
+axis(1, at=c(0.1, 1, 10, 100), labels=c(0.1, 1, 10, 100))
 lines(dataFrameMod$x, predict(hurshMod))
 
 text(.1, 0, 
@@ -86,7 +99,9 @@ plot(dataFrameMod2$x, transMod(dataFrameMod2$y),
      xlim = xAxisLimits,
      ylab = "",
      xlab = "",
+     xaxt = 'n',
      log = "x")
+axis(1, at=c(0.1, 1, 10, 100), labels=c(0.1, 1, 10, 100))
 lines(dataFrameMod2$x, predict(hurshMod2))
 
 text(.1, 0, 
@@ -95,3 +110,5 @@ text(.1, 0,
      ),
      adj = c(0, 0)
 )
+
+dev.off()
