@@ -3,6 +3,7 @@
 
 library(beezdemand)
 library(broom)
+library(extrafont)
 library(ggplot2)
 library(grid)
 library(gridExtra)
@@ -13,6 +14,8 @@ library(tidyverse)
 ##
 
 set.seed(65535)
+
+par(family="Times")
 
 png(filename = "plots/Figure 3.png",
     width=8,
@@ -197,7 +200,8 @@ coreFrame %>%
   theme_bw() +
   theme(
     panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()
+    panel.grid.minor = element_blank(),
+    text = element_text(size=16, family="Times")
   )
 
 dev.off()
