@@ -23,6 +23,7 @@ png(filename = "plots/Figure 3.png",
 nSimulatedSeries <- 2000
 
 capTo1000 <- TRUE
+kCorrection <- .5
 
 source("helperFx.R")
 
@@ -75,6 +76,8 @@ colnames(coreFrame) <- mColNames
 
 highestId <- max(passingFrame$id)
 
+i <- 1
+
 for (i in passingIds) {
   test <- subset(passingFrame, id == i)
   noZero.currentData <- subset(test, y > 0)
@@ -92,7 +95,7 @@ for (i in passingIds) {
   zbeFit2     <- NULL
 
   try(steveModFit <- nlmrt::wrapnls(
-    formula = log(y)/log(10) ~ log(q0)/log(10) + log(q0)/log(10) * (exp(-alpha * q0 * x) - 1),
+    formula = log(y)/log(10) ~ log(q0)/log(10) + ((log(q0)/log(10)) + kCorrection) * (exp(-alpha * q0 * x) - 1),
     start   = list(q0    = 10^setparams["q0lm"] %>% unname(),
                    alpha = 10^setparams["alphalm"] %>% unname()),
     lower   = c(0, 0),
@@ -113,7 +116,6 @@ for (i in passingIds) {
     upper   = c(Inf, Inf),
     data    = test), silent = TRUE)
 
-
   if (!is.null(koffModFit) & !is.null(steveModFit) & !is.null(zbeFit2)) {
     ### Seed Estimates
     coreFrame[i, "Q0"]     <- 10^sim$simparams[sim$simparams$id == as.numeric(i), "q0lr"]
@@ -125,23 +127,25 @@ for (i in passingIds) {
 
     coreFrame[i, "PmaxE"] <- EmpiricalPmax(test)
 
-    coreFrame[i, "Alpha.EXPL"]  <- coef(steveModFit)["alpha"]
-    coreFrame[i, "Q0.EXPL"]     <- coef(steveModFit)["q0"]
+    coreFrame[i, "Alpha.EXPL"]  <- coef(steveModFit)["alpha"] %>% unname()
+    coreFrame[i, "Q0.EXPL"]     <- coef(steveModFit)["q0"] %>% unname()
+    
     coreFrame[i, "Pmax.EXPL"]  <- GetPmaxEXPLobserved(
-      coreFrame[i, "Alpha.EXPL"],
-      coreFrame[i, "Q0.EXPL"]
+      coef(steveModFit)["alpha"] %>% unname(),
+      coef(steveModFit)["q0"] %>% unname()
     )
 
     coreFrame[i, "Alpha.EXPD"] <- koffModFit$par[2]
     coreFrame[i, "Q0.EXPD"]    <- koffModFit$par[1]
+    
     coreFrame[i, "Pmax.EXPD"]  <- GetPmaxEXPDobserved(
-      coreFrame[i, "Alpha.EXPD"],
-      coreFrame[i, "Q0.EXPD"]
+      koffModFit$par[2],
+      koffModFit$par[1]
     )
 
     coreFrame[i, "Alpha.IHS"]  <- coef(zbeFit2)["alpha"]
     coreFrame[i, "Q0.IHS"]     <- coef(zbeFit2)["q0"]
-
+    
     coreFrame[i, "Pmax.IHS"]  <- GetPmaxIHSobserved(
       coef(zbeFit2)["alpha"] %>% unname(),
       coef(zbeFit2)["q0"] %>% unname()
@@ -182,12 +186,14 @@ coreFrame %>%
   ggtitle(paste0("Koffarnus et al. (2015) Simulation (n=", nrow(coreFrame), ")")) +
   stat_summary(fun.data = calc_stat, geom="boxplot") +
   coord_flip() +
-  scale_y_log10(breaks = c(0.1, 1, 10, 100)) +
+  scale_y_log10(breaks = c(0.1, 1, 10, 100, 1000),
+                labels = c("0.1", "1", "10", "100", "1000"),
+                limits = c(0.1, 1000)) +
   scale_x_discrete(limits=c("Empirical",
                             "ZBE",
                             "EXPL",
                             "EXPD")) +
-  facet_wrap(~Parameter, scales = "free_y", ncol = 2) +
+  facet_wrap(~Parameter, scales = "free", ncol = 2) +
   theme_bw() +
   theme(
     panel.grid.major = element_blank(),

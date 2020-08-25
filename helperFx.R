@@ -1,16 +1,14 @@
 # Shawn Gilroy (2019) - MIT
 # Louisiana State University
 
+kCorrection <- .5
+
 transMod <- function(x, theta = 0.5) {
   log((x * theta) + ((theta^2) * (x^2) + 1)^0.5)/log(10)
 }
 
 fromIhsToNormal <- function(x) {
   (1/10^(1*x))*((10^(2*x))-1)
-}
-
-derivIHS <- function(x) {
-  log(sqrt(x^2 + 17/16) + x / 4) / log(10)
 }
 
 calc_stat <- function(x) {
@@ -27,7 +25,7 @@ unweighted.EXPD.RSS <- function(data, par) {
   TSS <- 0
 
   for (i in 1:nrow(data)) {
-    yHat <- par[1] * 10^(log(par[1])/log(10) * (exp(-par[2] * par[1] * data$x[i]) - 1))
+    yHat <- par[1] * 10^((log(par[1])/log(10) + kCorrection) * (exp(-par[2] * par[1] * data$x[i]) - 1))
 
     diff <- (data$y[i] - yHat)^2
 
@@ -126,18 +124,60 @@ EmpiricalPmax <- function(dat) {
   retObj[1, "x"]
 }
 
-GetPmaxEXPLobserved <- function(A_, Q0_) {
+lowerAsymptote.IHS <- function(q, a, maxPrice = 10^8) {
+  transMod(q) + transMod(q) * (exp(-a * q * maxPrice)-1)
+}
+
+lowerAsymptote.EXPL <- function(q, a, maxPrice = 10^8) {
+  log10(q) + (log10(q) + kCorrection) * (exp(-a * q * maxPrice)-1)
+}
+
+lowerAsymptote.EXPD <- function(q, a, maxPrice = 10^8) {
+  q * 10^((log(q)/log(10) + kCorrection) * (exp(-a * q * maxPrice)-1))
+}
+
+GetPmaxEXPLobserved <- function(A_, Q0_, start = 1) {
   result <- NULL
+  
+  lower.EXPL <- 10^lowerAsymptote.EXPL(Q0_, A_)
+  
   try(result <- optimx::optimx(par = c(1),
                                fn = function(par, data) {
-                                 demand <- log(data$Q0)/log(10) + log(data$Q0)/log(10) * (exp(-data$A * data$Q0 * par[1]) - 1)
-                                   
-                                 demand.n <- 10^(demand)
+                                 demand <- log(data$Q0)/log(10) + ((log(data$Q0)/log(10))+kCorrection) * (exp(-data$A * data$Q0 * par[1]) - 1)
+                                 
+                                 demand.n <- 10^(demand) - data$corr
+                                 
+                                 -(demand.n * par[1])
+                               },
+                               data = data.frame(Q0 = Q0_, 
+                                                 A = A_, 
+                                                 corr = lower.EXPL),
+                               method = c("BFGS"),
+                               control=list(maxit=2500)), silent = TRUE)
+  
+  if (is.null(result)) {
+    return(NA)
+  }
+  
+  return(result$p1)
+}
+
+GetPmaxEXPDobserved <- function(A_, Q0_, start = 1) {
+  result <- NULL
+  
+  lower.EXPD <- lowerAsymptote.EXPD(Q0_, A_)
+  
+  try(result <- optimx::optimx(par = c(start),
+                               fn = function(par, data) {
+                                 demand.n <- data$Q0 * 10^((log(data$Q0)/log(10) + kCorrection) * (exp(-data$A * data$Q0 * par[1]) - 1))
+                                 
+                                 demand.n <- demand.n - data$corr
                                  
                                  -(demand.n * par[1])
                                },
                                data = data.frame(Q0 = Q0_,
-                                                 A = A_),
+                                                 A = A_,
+                                                 corr = lower.EXPD),
                                method = c("BFGS"),
                                control=list(maxit=2500)), silent = TRUE)
   
@@ -148,30 +188,12 @@ GetPmaxEXPLobserved <- function(A_, Q0_) {
   return(result$p1)
 }
 
-GetPmaxEXPDobserved <- function(A_, Q0_) {
+GetPmaxIHSobserved <- function(A_, Q0_, start = 1) {
   result <- NULL
-  try(result <- optimx::optimx(par = c(1),
-                               fn = function(par, data) {
-                                 demand.n <- data$Q0 * 10^(log(data$Q0)/log(10) * (exp(-data$A * data$Q0 * par[1]) - 1))
-                                 -(demand.n * par[1])
-                               },
-                               data = data.frame(Q0 = Q0_,
-                                                 A = A_),
-                               method = c("BFGS"),
-                               control=list(maxit=2500)), silent = TRUE)
-  
-  if (is.null(result)) {
-    return(NA)
-  }
-  
-  return(result$p1)
-}
-
-GetPmaxIHSobserved <- function(A_, Q0_) {
-  result <- NULL
-  try(result <- optimx::optimx(par = c(1),
+  try(result <- optimx::optimx(par = c(start),
                                fn = function(par, data) {
                                  demand <- log((data$Q0 * 0.5) + ((0.5^2) * (data$Q0^2) + 1)^0.5)/log(10) + log((data$Q0 * 0.5) + ((0.5^2) * (data$Q0^2) + 1)^0.5)/log(10) * (exp(-data$A * data$Q0 * par[1]) - 1)
+                                 
                                  demand.n <- fromIhsToNormal(demand)
                                  
                                  -(demand.n * par[1])
