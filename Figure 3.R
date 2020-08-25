@@ -186,7 +186,7 @@ coreFrame %>%
          Parameter = ifelse(Parameter == "PmaxE", "Pmax", Parameter),
          Model = ifelse(Model == "Q0E" | Model == "PmaxE", "Empirical", Model)) %>%
   ggplot(., aes(Model, Value)) +
-  ggtitle(paste0("Koffarnus et al. (2015) Simulation (n=", nrow(coreFrame), ")")) +
+  #ggtitle(paste0("Koffarnus et al. (2015) Simulation (n=", nrow(coreFrame), ")")) +
   stat_summary(fun.data = calc_stat, geom="boxplot") +
   coord_flip() +
   scale_y_log10(breaks = c(0.1, 1, 10, 100, 1000),
