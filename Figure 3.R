@@ -127,19 +127,17 @@ for (i in passingIds) {
 
     coreFrame[i, "Alpha.EXPL"]  <- coef(steveModFit)["alpha"]
     coreFrame[i, "Q0.EXPL"]     <- coef(steveModFit)["q0"]
-    coreFrame[i, "Pmax.EXPL"]  <- try(GetAnalyticPmax(
+    coreFrame[i, "Pmax.EXPL"]  <- GetPmaxEXPLobserved(
       coreFrame[i, "Alpha.EXPL"],
-      log10(coreFrame[i, "Q0.EXPL"]),
       coreFrame[i, "Q0.EXPL"]
-    ))
+    )
 
     coreFrame[i, "Alpha.EXPD"] <- koffModFit$par[2]
     coreFrame[i, "Q0.EXPD"]    <- koffModFit$par[1]
-    coreFrame[i, "Pmax.EXPD"]  <- try(GetAnalyticPmax(
+    coreFrame[i, "Pmax.EXPD"]  <- GetPmaxEXPDobserved(
       coreFrame[i, "Alpha.EXPD"],
-      log10(coreFrame[i, "Q0.EXPD"]),
       coreFrame[i, "Q0.EXPD"]
-    ))
+    )
 
     coreFrame[i, "Alpha.IHS"]  <- coef(zbeFit2)["alpha"]
     coreFrame[i, "Q0.IHS"]     <- coef(zbeFit2)["q0"]

@@ -22,7 +22,6 @@ calc_stat <- function(x) {
   return(stats)
 }
 
-
 # Par = Q, A
 unweighted.EXPD.RSS <- function(data, par) {
   TSS <- 0
@@ -117,75 +116,6 @@ SimulateDemand <- function(nruns = 10, setparams, sdindex, x, outdir = NULL, fn 
                  "simparams" = simparams, "seeds" = seeds))
 }
 
-lambertW = function(z,b=0,maxiter=10,eps=.Machine$double.eps,min.imag=1e-9) {
-  if (any(round(Re(b)) != b))
-    stop("branch number for W must be an integer")
-  if (!is.complex(z) && any(z<0)) z=as.complex(z)
-  ## series expansion about -1/e
-  ##
-  ## p = (1 - 2*abs(b)).*sqrt(2*e*z + 2);
-  ## w = (11/72)*p;
-  ## w = (w - 1/3).*p;
-  ## w = (w + 1).*p - 1
-  ##
-  ## first-order version suffices:
-  ##
-  w = (1 - 2*abs(b))*sqrt(2*exp(1)*z + 2) - 1
-  ## asymptotic expansion at 0 and Inf
-  ##
-  v = log(z + as.numeric(z==0 & b==0)) + 2*pi*b*1i;
-  v = v - log(v + as.numeric(v==0))
-  ## choose strategy for initial guess
-  ##
-  c = abs(z + exp(-1));
-  c = (c > 1.45 - 1.1*abs(b));
-  c = c | (b*Im(z) > 0) | (!Im(z) & (b == 1))
-  w = (1 - c)*w + c*v
-  ## Halley iteration
-  ##
-  for (n in 1:maxiter) {
-    p = exp(w)
-    t = w*p - z
-    f = (w != -1)
-    t = f*t/(p*(w + f) - 0.5*(w + 2.0)*t/(w + f))
-    w = w - t
-    if (abs(Re(t)) < (2.48*eps)*(1.0 + abs(Re(w)))
-        && abs(Im(t)) < (2.48*eps)*(1.0 + abs(Im(w))))
-      break
-  }
-  if (n==maxiter) warning(paste("iteration limit (",maxiter,
-                                ") reached, result of W may be inaccurate",sep=""))
-  if (all(Im(w)<min.imag)) w = as.numeric(w)
-  return(w)
-}
-
-GetAnalyticPmaxFallback <- function(K_, A_, Q0_) {
-  result <- NULL
-  try(result <- optimx::optimx(par = c((1/(Q0_ * A_ * K_^1.5)) * (0.083 * K_ + 0.65)),
-                               fn = function(par, data) {
-                                 abs((log((10^data$K)) * (-data$A * data$Q0 * par[1] * exp(-data$A * data$Q0 * par[1]))) + 1)
-                               },
-                               data = data.frame(Q0 = Q0_,
-                                                 A = A_,
-                                                 K = K_),
-                               method = c("BFGS"),
-                               control=list(maxit=2500)), silent = TRUE)
-
-  if (class(result) == "try-error" | is.null(result)) {
-    return(NA)
-  }
-
-  return(result$p1)
-}
-
-GetAnalyticPmax <- function(Alpha, K, Q0) {
-  if (K <= exp(1)/log(10)) {
-    return (GetAnalyticPmaxFallback(K, Alpha, Q0));
-  } else {
-    return (-lambertW(z = -1/log((10^K))) / (Alpha * Q0));
-  }
-}
-
 EmpiricalPmax <- function(dat) {
   tempObj <- dat
   tempObj$PmaxE <- tempObj$x * tempObj$y
@@ -196,22 +126,44 @@ EmpiricalPmax <- function(dat) {
   retObj[1, "x"]
 }
 
-GetPmaxIHSderivative <- function(A_, Q0_) {
+GetPmaxEXPLobserved <- function(A_, Q0_) {
   result <- NULL
   try(result <- optimx::optimx(par = c(1),
                                fn = function(par, data) {
-
-                                 abs((-(data$A*data$Q0*par[1]*exp(-data$A*data$Q0*par[1])*log((data$Q0*(data$Q0^2 + 4)^(1/2))/4)*(par[1]^2 + 4))/(2*(par[1]^2 + 2))) + 1)
+                                 demand <- log(data$Q0)/log(10) + log(data$Q0)/log(10) * (exp(-data$A * data$Q0 * par[1]) - 1)
+                                   
+                                 demand.n <- 10^(demand)
+                                 
+                                 -(demand.n * par[1])
                                },
                                data = data.frame(Q0 = Q0_,
                                                  A = A_),
                                method = c("BFGS"),
                                control=list(maxit=2500)), silent = TRUE)
-
+  
   if (is.null(result)) {
     return(NA)
   }
+  
+  return(result$p1)
+}
 
+GetPmaxEXPDobserved <- function(A_, Q0_) {
+  result <- NULL
+  try(result <- optimx::optimx(par = c(1),
+                               fn = function(par, data) {
+                                 demand.n <- data$Q0 * 10^(log(data$Q0)/log(10) * (exp(-data$A * data$Q0 * par[1]) - 1))
+                                 -(demand.n * par[1])
+                               },
+                               data = data.frame(Q0 = Q0_,
+                                                 A = A_),
+                               method = c("BFGS"),
+                               control=list(maxit=2500)), silent = TRUE)
+  
+  if (is.null(result)) {
+    return(NA)
+  }
+  
   return(result$p1)
 }
 
